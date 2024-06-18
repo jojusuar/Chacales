@@ -2,23 +2,25 @@
 string: .asciiz "Tesoros y Chacales\n"
 
 .text 
-main: jal print_title      
-jal rng            
+main: addi $sp, $sp, -4
+sw $a0, 0($sp)
+la $a0, string
+jal print_string
+lw $a0, 0($sp)
+addi $sp, $sp, 4
+jal rng
 move $a0, $v0      # Muevo el resultado de rng a a0 para ser impreso
 li $v0, 1          # syscall code para imprimir un entero
 syscall
 li $v0, 10         # syscall code para acabar el programa
 syscall
 
-print_title: addi $sp, $sp, -8 # imprime el banner guardado en la variable global string
-sw $a0, 0($sp)
-sw $ra, 4($sp)     # llamar a syscall vuelve anidadas a las funciones
+print_string: addi $sp, $sp, -4 # imprime un string presente en a0
+sw $ra, 0($sp)     # llamar a syscall vuelve anidadas a las funciones
 li $v0, 4          # syscall code para imprimir un string
-la $a0, string
 syscall      
-lw $ra, 4($sp)
-lw $a0, 0($sp)
-addi $sp, $sp, 8
+lw $ra, 0($sp)
+addi $sp, $sp, 4
 jr $ra
 
 rng: addi $sp, $sp, -8 # genera un numero aleatorio entre [1-12]

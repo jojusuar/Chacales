@@ -1,10 +1,10 @@
 .data
-string: .asciiz "Tesoros y Chacales\n"
+title: .asciiz "Tesoros y Chacales\n"
 
 .text 
 main: addi $sp, $sp, -4
 sw $a0, 0($sp)
-la $a0, string
+la $a0, title
 jal print_string
 lw $a0, 0($sp)
 addi $sp, $sp, 4

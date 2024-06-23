@@ -1,5 +1,6 @@
 .data
 board: .space 12           # Tablero de 12 casillas
+descubierto: .space 12    # 12 casillas para marcar como descubiertas (0: no, 1: sí)
 chacales: .word 0          # Número de chacales encontrados
 tesoros: .word 0           # Número de tesoros encontrados
 dinero: .word 0            # Dinero acumulado
@@ -11,7 +12,9 @@ mensaje_continuar: .asciiz "¿Deseas continuar jugando? (1: Si, 0: No)\n"
 mensaje_dinero: .asciiz "Dinero acumulado: $"
 mensaje_chacales: .asciiz "Chacales encontrados: "
 mensaje_tesoros: .asciiz "Tesoros encontrados: "
-mensaje_tablero: .asciiz "Estado del tablero: \n"
+mensaje_tablero: .asciiz "\nEstado del tablero: \n"
+mensaje_numero_generado: .asciiz "\nNúmero generado: "
+msg_oculto: .asciiz "? "
 msg_O: .asciiz "O "
 msg_X: .asciiz "X "
 msg_dollar: .asciiz "$ "
@@ -30,9 +33,29 @@ main:
     
     # Bucle principal del juego
 jugar:
-    jal mostrar_tablero
     jal generar_numero_aleatorio
+    
+    move $t4, $v0
+
+    # Mostrar el número generado
+    li $v0, 4
+    la $a0, mensaje_numero_generado
+    syscall
+
+    move $a0, $t4  # Mover el número generado a $a0
+    li $v0, 1      # Syscall para imprimir entero
+    syscall
+
+    li $v0, 4
+    la $a0, newline
+    syscall
+    
+    move $v0, $t4  # Mover el número generado a $v0
+
     jal descubrir_casilla
+
+    # Mostrar el tablero actualizado
+    jal mostrar_tablero
 
     # Verificar condiciones de fin del juego
     jal verificar_condiciones
@@ -113,12 +136,22 @@ mostrar_tablero:
     la $a0, mensaje_tablero
     syscall
 
-    li $t0, 0
+    li $t0, 0  # Inicializa el índice del bucle
+
 mostrar_tablero_loop:
-    lb $t1, board($t0)
-    beqz $t1, casilla_vacia
+    lb $t2, descubierto($t0)  # Cargar el estado de descubrimiento de la casilla actual
+    beqz $t2, casilla_oculta  # Si la casilla no está descubierta, mostrar "?"
+
+    lb $t1, board($t0)  # Cargar el contenido de la casilla actual
+    beq $t1, 0, casilla_vacia
     beq $t1, 1, casilla_chacal
     beq $t1, 2, casilla_tesoro
+
+casilla_oculta:
+    li $v0, 4
+    la $a0, msg_oculto
+    syscall
+    j siguiente_casilla
 
 casilla_vacia:
     li $v0, 4
@@ -156,7 +189,7 @@ generar_numero_aleatorio:
     li $a1, 12         # limite superior exclusivo del entero a generarse 
     syscall            # genera el entero y lo guarda en a0
     
-    addi $v0, $a0, 0
+    addi $v0, $a0, 1
     
     lw $ra, 8($sp)
     lw $a0, 4($sp)
@@ -169,13 +202,19 @@ generar_numero_aleatorio:
 
 # Descubre la casilla seleccionada
 descubrir_casilla:
-    move $t0, $v0  # $t0 = número de casilla
-    subi $t0, $t0, 1  # Convertir de 1-12 a 0-11
+    move $t0, $v0       # $t0 = número de casilla
+    subi $t0, $t0, 1    # Convertir de 1-12 a 0-11
+    lb $t1, descubierto($t0)
+    bnez $t1, casilla_ya_descubierta  # Si la casilla ya está descubierta, ir a la etiqueta correspondiente
+
+    li $t1, 1
+    sb $t1, descubierto($t0)  # Marcar la casilla como descubierta
+
     lb $t1, board($t0)
     beqz $t1, casilla_vacia_descubrir
     beq $t1, 1, casilla_chacal_descubrir
     beq $t1, 2, casilla_tesoro_descubrir
-    j casilla_ya_descubierta
+    j fin_descubrir
 
 casilla_vacia_descubrir:
     li $t1, 0
@@ -203,11 +242,16 @@ casilla_tesoro_descubrir:
 
 casilla_ya_descubierta:
     # Implementar lógica para casilla ya descubierta (pérdida del juego si se repite 3 veces)
+    # Aquí puede contar las veces que una casilla descubierta es seleccionada
+    # Si se selecciona 3 veces seguidas, el jugador pierde
     j fin_descubrir
 
 fin_descubrir:
     jr $ra
-
+    
+    
+    
+    
 # Verifica las condiciones para terminar el juego
 verificar_condiciones:
     lw $t1, chacales

@@ -227,9 +227,6 @@ descubrir_casilla:
     lb $t1, descubierto($t0)
     bnez $t1, casilla_ya_descubierta  # Si la casilla ya está descubierta, ir a la etiqueta correspondiente
     
-    li $t1, 0
-    sw $t1, coincidencias # resetea el contador de apariciones consecutivas del numero aleatorio
-    
     li $t1, 1
     sb $t1, descubierto($t0)  # Marcar la casilla como descubierta
 
@@ -266,7 +263,7 @@ casilla_tesoro_descubrir:
 casilla_ya_descubierta:
     lw $t1, coincidencias
     addi $t1, $t1, 1
-    beq $t1, 3, perder_juego
+    beq $t1, 3, perder_juego # si se genera 3 veces un numero correspondiente al de alguna casilla ya encontrada
     sw $t1, coincidencias
     j fin_descubrir
 

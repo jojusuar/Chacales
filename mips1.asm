@@ -4,6 +4,7 @@ descubierto: .space 12    # 12 casillas para marcar como descubiertas (0: no, 1:
 chacales: .word 0          # Número de chacales encontrados
 tesoros: .word 0           # Número de tesoros encontrados
 dinero: .word 0            # Dinero acumulado
+coincidencias: .word 0     #contador de repeticiones seguidas del numero aleatorio
 descubiertas: .space 12    # Casillas descubiertas
 mensaje_bienvenida: .asciiz "Bienvenido al Juego de Chacales!\n"
 mensaje_perder: .asciiz "¡Has perdido el juego!\n"
@@ -50,16 +51,20 @@ jugar:
     la $a0, newline
     syscall
     
+    
     move $v0, $t4  # Mover el número generado a $v0
 
     jal descubrir_casilla
 
     # Mostrar el tablero actualizado
     jal mostrar_tablero
-
+    
+    # Mostrar el dinero acumulado
+    jal mostrar_dinero
+    
     # Verificar condiciones de fin del juego
     jal verificar_condiciones
-
+    
     # Preguntar al jugador si quiere continuar
     jal preguntar_continuar
     beq $v0, 0, fin_juego
@@ -128,7 +133,22 @@ colocar_tesoros:
 
 
 
+ # Mostrar el dinero acumulado
+ mostrar_dinero:
+    li $v0, 4
+    la $a0, mensaje_dinero
+    syscall
+    
+    la $t0, dinero
+    lw $a0, 0($t0)
+    li $v0, 1      # Syscall para imprimir entero
+    syscall
 
+    li $v0, 4
+    la $a0, newline
+    syscall
+    
+    jr $ra
 
 # Muestra el estado actual del tablero
 mostrar_tablero:
@@ -206,7 +226,10 @@ descubrir_casilla:
     subi $t0, $t0, 1    # Convertir de 1-12 a 0-11
     lb $t1, descubierto($t0)
     bnez $t1, casilla_ya_descubierta  # Si la casilla ya está descubierta, ir a la etiqueta correspondiente
-
+    
+    li $t1, 0
+    sw $t1, coincidencias # resetea el contador de apariciones consecutivas del numero aleatorio
+    
     li $t1, 1
     sb $t1, descubierto($t0)  # Marcar la casilla como descubierta
 
@@ -241,31 +264,34 @@ casilla_tesoro_descubrir:
     j fin_descubrir
 
 casilla_ya_descubierta:
-    # Implementar lógica para casilla ya descubierta (pérdida del juego si se repite 3 veces)
-    # Aquí puede contar las veces que una casilla descubierta es seleccionada
-    # Si se selecciona 3 veces seguidas, el jugador pierde
+    lw $t1, coincidencias
+    addi $t1, $t1, 1
+    sw $t1, coincidencias
     j fin_descubrir
 
 fin_descubrir:
     jr $ra
-    
-    
+
     
     
 # Verifica las condiciones para terminar el juego
 verificar_condiciones:
     lw $t1, chacales
     lw $t2, tesoros
+    lw $t3, coincidencias
     beq $t1, 4, perder_juego
     beq $t2, 4, ganar_juego
+    beq $t3, 3, perder_juego
     jr $ra
 
 perder_juego:
+    sw $zero, dinero
     li $v0, 4
     la $a0, mensaje_perder
     syscall
     li $v0, 10
     syscall
+    j fin_juego
 
 ganar_juego:
     li $v0, 4

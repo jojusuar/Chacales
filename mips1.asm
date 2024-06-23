@@ -10,6 +10,7 @@ mensaje_bienvenida: .asciiz "Bienvenido al Juego de Chacales!\n"
 mensaje_perder: .asciiz "¡Has perdido el juego!\n"
 mensaje_ganar: .asciiz "¡Has ganado el juego!\n"
 mensaje_continuar: .asciiz "¿Deseas continuar jugando? (1: Si, 0: No)\n"
+mensaje_invalido: .asciiz "La opción ingresada no es válida.\n"
 mensaje_dinero: .asciiz "Dinero acumulado: $"
 mensaje_chacales: .asciiz "Chacales encontrados: "
 mensaje_tesoros: .asciiz "Tesoros encontrados: "
@@ -303,9 +304,18 @@ preguntar_continuar:
     syscall
     li $v0, 5
     syscall
+    beq $v0, 1, guardar_respuesta
+    bnez $v0, entrada_invalida
+guardar_respuesta:
     move $v0, $v0  # Guardar respuesta del jugador
     jr $ra
-
+entrada_invalida:
+    li $v0, 4
+    la $a0, mensaje_invalido
+    syscall
+    j preguntar_continuar
+    
+    
 # Muestra los resultados finales del juego
 mostrar_resultados:
     li $v0, 4

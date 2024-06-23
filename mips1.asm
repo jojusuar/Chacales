@@ -266,6 +266,7 @@ casilla_tesoro_descubrir:
 casilla_ya_descubierta:
     lw $t1, coincidencias
     addi $t1, $t1, 1
+    beq $t1, 3, perder_juego
     sw $t1, coincidencias
     j fin_descubrir
 
@@ -281,7 +282,6 @@ verificar_condiciones:
     lw $t3, coincidencias
     beq $t1, 4, perder_juego
     beq $t2, 4, ganar_juego
-    beq $t3, 3, perder_juego
     jr $ra
 
 perder_juego:
@@ -289,16 +289,15 @@ perder_juego:
     li $v0, 4
     la $a0, mensaje_perder
     syscall
-    li $v0, 10
-    syscall
     j fin_juego
+    
 
 ganar_juego:
     li $v0, 4
     la $a0, mensaje_ganar
     syscall
-    li $v0, 10
-    syscall
+    j fin_juego
+    
 
 # Pregunta al jugador si quiere continuar jugando
 preguntar_continuar:
